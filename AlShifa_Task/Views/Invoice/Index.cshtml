@@ -1,0 +1,29 @@
+﻿@model List<AlShifa_Task.Models.Invoice>
+
+<h2>All Invoices</h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Invoice ID</th>
+            <th>Date</th>
+            <th>Vendor</th>
+            <th>Gross Total</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var invoice in Model)
+        {
+            <tr>
+                <td>@invoice.InvoiceId</td>
+                <td>@invoice.Date.ToString("yyyy-MM-dd")</td>
+                <td>@invoice.Vendor.Name</td>
+                <td>@invoice.GrossTotal</td>
+                <td>
+                    <a href="@Url.Action("Preview", "Invoice", new { id = invoice.InvoiceId })" class="btn btn-info">View</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,47 @@
+﻿@model AlShifa_Task.Models.Invoice
+
+<h2>Invoice Preview</h2>
+
+<!-- Vendor Information -->
+<div class="card">
+    <div class="card-header">
+        <h4>Vendor Details</h4>
+    </div>
+    <div class="card-body">
+        <p><strong>Vendor Name:</strong> @Model.Vendor.Name</p>
+        <p><strong>Contact:</strong> @Model.Vendor.Contact</p>
+        <p><strong>Date:</strong> @Model.Date.ToString("dd-MM-yyyy")</p>
+    </div>
+</div>
+
+<!-- Invoice Items -->
+<h3>Invoice Items</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Item Name</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Total Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.InvoiceItems)
+        {
+            <tr>
+                <td>@item.Item.Name</td>
+                <td>@item.Item.Price</td>
+                <td>@item.Quantity</td>
+                <td>@item.TotalPrice</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Gross Total -->
+<h4><strong>Gross Total:</strong> @Model.GrossTotal</h4>
+
+<!-- Buttons -->
+<a href="@Url.Action("Index", "Invoice")" class="btn btn-primary">Back to Invoice List</a>
+<button onclick="window.print()" class="btn btn-success">Print Invoice</button>
+

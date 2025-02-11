@@ -1,0 +1,346 @@
+﻿@*
+         @model AlShifa_Task.Models.Invoice
+
+    <h2>Create Invoice</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    @using (Html.BeginForm("Create", "Invoice", FormMethod.Post, new { id = "invoiceForm" }))
+    {
+        <div class="form-group">
+            <label>Select Vendor</label>
+            @Html.DropDownListFor(m => m.VendorId, new SelectList(ViewBag.Vendors, "VendorId", "Name"), "-- Select Vendor --", new { @class = "form-control" })
+        </div>
+
+        <h4>Available Items</h4>
+        <table class="table" id="itemsTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in ViewBag.Items)
+                {
+                    <tr>
+                        <td>@item.Name</td>
+                        <td>@item.Price</td>
+                        <td>@item.QuantityInStock</td>
+                        <td>
+                            <button type="button" class="btn btn-success add-item"
+                                    data-id="@item.ItemId" data-name="@item.Name"
+                                    data-price="@item.Price">
+                                Add
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <h4>Selected Items</h4>
+        <table class="table" id="selectedItemsTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h4>Gross Total: <span id="grossTotal">0</span></h4>
+
+        <input type="hidden" name="grossTotal" id="grossTotalInput" value="0" />
+
+        <button type="submit" class="btn btn-primary">Create Invoice</button>
+    }
+    @*Implement AJAX*@
+@*
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            let grossTotal = 0;
+
+            $(".add-item").click(function () {
+                let itemId = $(this).data("id");
+                let itemName = $(this).data("name");
+                let itemPrice = $(this).data("price");
+
+                let existingRow = $("#selectedItemsTable tbody tr[data-id='" + itemId + "']");
+                if (existingRow.length > 0) {
+                    let qtyInput = existingRow.find(".item-quantity");
+                    let qty = parseInt(qtyInput.val()) + 1;
+                    qtyInput.val(qty);
+                    updateRowTotal(existingRow, itemPrice, qty);
+                } else {
+                    let newRow = `<tr data-id="${itemId}">
+                        <td>${itemName}</td>
+                        <td><input type="number" name="quantities" class="item-quantity" value="1" min="1" style="width:60px;" /></td>
+                        <td>${itemPrice}</td>
+                        <td class="item-total">${itemPrice}</td>
+                        <td><button type="button" class="btn btn-danger remove-item">Remove</button></td>
+                        <input type="hidden" name="itemIds" value="${itemId}" />
+                    </tr>`;
+                    $("#selectedItemsTable tbody").append(newRow);
+                }
+                updateGrossTotal();
+            });
+
+            $(document).on("click", ".remove-item", function () {
+                $(this).closest("tr").remove();
+                updateGrossTotal();
+            });
+
+            $(document).on("input", ".item-quantity", function () {
+                let row = $(this).closest("tr");
+                let price = row.find("td:nth-child(3)").text();
+                let qty = parseInt($(this).val());
+                updateRowTotal(row, price, qty);
+                updateGrossTotal();
+            });
+
+            function updateRowTotal(row, price, qty) {
+                let total = price * qty;
+                row.find(".item-total").text(total);
+            }
+
+            function updateGrossTotal() {
+                grossTotal = 0;
+                $(".item-total").each(function () {
+                    grossTotal += parseFloat($(this).text());
+                });
+                $("#grossTotal").text(grossTotal);
+                $("#grossTotalInput").val(grossTotal);
+            }
+        });
+    </script>
+*@
+
+
+@model AlShifa_Task.Models.Invoice
+
+<h2>Create Invoice</h2>
+
+<!-- Vendor Selection -->
+<div class="form-group">
+    <label for="vendorId">Select Vendor:</label>
+    @Html.DropDownList("VendorId", ViewBag.Vendors as SelectList, "-- Select Vendor --", new { @class = "form-control" })
+</div>
+
+<!-- Item Selection -->
+<div class="form-group">
+    <label for="itemDropDown">Select Item:</label>
+    <select id="itemDropdown" class="form-control">
+        <option value="">-- Select Item --</option>
+        @foreach (var item in ViewBag.Items as List<AlShifa_Task.Models.Item>)
+        {
+            <option value="@item.ItemId" data-item-id="@item.ItemId" data-price="@item.Price" data-stock="@item.QuantityInStock">
+                @item.Name
+            </option>
+        }
+    </select>
+    @*  @Html.DropDownList("ItemId", ViewBag.Items as SelectList, "-- Select Item --", new { @class = "form-control", id = "itemDropdown" })*@
+</div>
+
+<!-- Item Details (Auto-filled) -->
+<div class="form-group">
+    <label>Price:</label>
+    <input type="text" id="item_price" class="form-control" readonly />
+</div>
+
+<div class="form-group">
+    <label>Stock Available:</label>
+    <input type="text" id="item_stock" class="form-control" readonly />
+</div>
+
+<div class="form-group">
+    <label>Quantity:</label>
+    <input type="number" id="itemQuantity" class="form-control" min="1">
+</div>
+
+<!-- Add Item Button -->
+<button type="button" id="addItemBtn" class="btn btn-primary">Add Item</button>
+
+<!-- Table for Selected Items -->
+<h3>Selected Items</h3>
+<table class="table" id="selectedItemsTable">
+    <thead>
+        <tr>
+            <th>Item Name</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Total</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- Gross Total -->
+<h4>Total Price: <span id="gross_Total">0</span></h4>
+
+<!-- Submit Invoice -->
+<button type="submit" class="btn btn-success" id="submitInvoice">Create Invoice</button>
+
+<!-- View All Invoice -->
+<div id="viewInvoicesSection" style="margin-top: 20px;">
+    <a href="@Url.Action("Index", "Invoice")" class="btn btn-secondary">View All Invoices</a>
+</div>
+
+<!-- Placeholder for View Invoice Button (Initially Hidden) -->
+<div id="viewInvoiceSection" style="display: none; margin-top: 20px;">
+    <a id="viewInvoiceButton" href="#" class="btn btn-info">View Invoice</a>
+</div>
+
+@section scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            let selectedItems = []; // Global array to store selected items
+
+            // When an item is selected
+            $("#itemDropdown").change(function () {
+
+                var selectedOption = $("#itemDropdown option:selected");
+                var price = selectedOption.data("price");
+                var stock = selectedOption.data("stock");
+
+                console.log("Selected Item:", selectedOption.text());
+                console.log("Price:", price);
+                console.log("Stock:", stock);
+                $("#itemQuantity").val(""); // Reset quantity input field
+                $("#item_price").val(price);// ? price.toFixed(2) : "0");
+                $("#item_stock").val(stock);// ? stock : "0");
+            });
+
+            // Add item to table
+            $("#addItemBtn").click(function () {
+                var itemId = $("#itemDropdown").val();
+                var itemName = $("#itemDropdown option:selected").text();
+                var price = parseFloat($("#item_price").val());
+                var quantity = parseInt($("#itemQuantity").val());
+
+                if (!itemId || quantity <= 0) {
+                    alert("Please select an item and enter a valid quantity.");
+                    return;
+                }
+
+                var total = price * quantity;
+
+                // Check if item already exists, update quantity
+                var existingItem = selectedItems.find(item => item.itemId === itemId);
+                if (existingItem) {
+                    existingItem.quantity += quantity;
+                    existingItem.total += total;
+
+                    // Update table row instead of adding duplicate
+                    $("#selectedItemsTable tbody tr").each(function () {
+                        var rowItemId = $(this).data("data-item-id");
+                        if (rowItemId == itemId) {
+                            var newQuantity = existingItem.quantity;
+                            var newTotal = existingItem.total;
+                            $(this).find(".itemQuantity").text(newQuantity);
+                            $(this).find(".totalPrice").text(newTotal);
+                        }
+                    });
+                } else {
+                    // Add new row
+                    selectedItems.push({ itemId, itemName, quantity, price, total });
+
+                    var newRow = `<tr data-item-id="${itemId}">
+                                            <td>${itemName}</td>
+                                            <td>${price}</td>
+                                            <td class="itemQuantity">${quantity}</td>
+                                            <td class="totalPrice">${total}</td>
+                                            <td><button type="button" class="btn btn-danger removeItem">Remove</button></td>
+                                      </tr>`;
+                    $("#selectedItemsTable tbody").append(newRow);
+                }
+
+
+                updateGrossTotal();
+            });
+
+            // Remove item from table
+            $(document).on("click", ".removeItem", function () {
+                var row = $(this).closest("tr");
+                var itemId = row.data("data-item-id");
+
+                // Remove item from the selectedItems array
+                selectedItems = selectedItems.filter(item => item.itemId != itemId);
+
+                row.remove(); // Remove row from table
+                updateGrossTotal();
+            });
+
+            // Update Gross Total
+            function updateGrossTotal() {
+                var total = selectedItems.reduce((sum, item) => sum + item.total, 0);
+                $("#gross_Total").text(total);
+            }
+
+            // Submit Invoice
+            $("#submitInvoice").click(function () {
+                var vendorId = $("#VendorId").val();
+                var invoiceItems = [];
+
+                $("#selectedItemsTable tbody tr").each(function () {
+                    var itemId = $(this).attr("data-item-id"); // Corrected retrieval// $(this).find("td:eq(0)").data("data-item-id");
+                    var quantity = parseInt($(this).find("td:eq(2)").text());
+                    var totalPrice = parseFloat($(this).find("td:eq(3)").text());
+
+                    invoiceItems.push({
+                        ItemId: itemId,
+                        Quantity: quantity,
+                        TotalPrice: totalPrice
+                    });
+                });
+
+                if (!vendorId || invoiceItems.length === 0) {
+                    alert("Please select a vendor and add at least one item.");
+                    return;
+                }
+                var invoiceData = {
+                    VendorId: vendorId,
+                    InvoiceItems: invoiceItems
+                };
+
+                console.log("Invoice Data: ", JSON.stringify(invoiceData, null, 2));
+
+                $.ajax({
+                    url: "/Invoice/Create",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(invoiceData),
+                    success: function (response) {
+                        if (response.success) {
+                            alert(response.message);
+                            // Show the "View Invoice" button with correct ID
+                            console.log("Invoice ID: ", response.invoiceId);
+                            $("#viewInvoiceButton").attr("href", "/Invoice/Preview/" + response.invoiceId);
+                            $("#viewInvoiceSection").show();
+
+                            //window.location.href = "/Invoice/Index";
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function () {
+                        alert("Error while creating invoice.");
+                    }
+                });
+            });
+
+        });
+    </script>
+}
